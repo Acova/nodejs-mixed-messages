@@ -1,18 +1,6 @@
 const readline = require('readline');
 const fetch = require('node-fetch');
-
-const getUserInput = (message) => {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
-    rl.question('¿Podrías facilitar tu nombre?: ', (name) => {
-        console.log(`Tu nombre es ${name}`);
-
-        rl.close();
-    })   
-}
+const Spinner = require('cli-spinner').Spinner;
 
 const getRandomQuote = async () => {
     const response = await fetch("https://api.quotable.io/random");
@@ -44,12 +32,44 @@ const getWikipediaSiteUrl = async (siteId) => {
         const siteData = await siteResponse.json();
         return siteData.query.pages[`${siteId}`].canonicalurl
     } catch (e) {
-        console.log(e);
+        //console.log(e);
         return "";
     }
 }
 
-getAuthorWikipediaSites('Malcom X')
-    .then((sites) => {
-        console.log(sites);
-    })
+const startSpinner = (title) => {
+    let sp = new Spinner(title);
+    sp.setSpinnerString(0);
+    sp.start();
+    return sp;
+}
+
+const showMessage = async () => {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    rl.question("Could you please write your name?: ", (name) => {
+        rl.close();
+        let sp = startSpinner(`Hi ${name}, we are finding your quote of the day...`);
+    getRandomQuote()
+        .then((quote) => {
+            sp.stop();
+            console.log(`\nYour quote of the day is: ${quote.content}`);
+            console.log(`Author: ${quote.author}`);
+
+            sp = startSpinner(`We are looking for some info about your quote of the day...`)
+            const info = getAuthorWikipediaSites(quote.author)
+                .then((sites) => {
+                    sp.stop();
+                    console.log("\nYou can learn about the author of your quote of the day in the next sites:");
+                    sites.forEach((elem) => {
+                        console.log(elem);
+                    })
+                })
+        });
+    }) 
+}
+
+showMessage();
